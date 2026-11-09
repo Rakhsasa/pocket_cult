@@ -26,7 +26,7 @@ class PocketCultivatorStore : public PersistableStore<PocketCultivatorStore> {
   friend class PersistableStore<PocketCultivatorStore>;
 
  public:
-  static const char* getFilePath() { return "/.pocket_cult/character.json"; }
+  static const char* getFilePath() { return "/.crosspoint/pocket_cult_character.json"; }
 
   void toJson(JsonDocument& doc) const;
   bool fromJson(JsonVariantConst doc);
