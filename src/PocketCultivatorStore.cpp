@@ -1,9 +1,10 @@
 #include "PocketCultivatorStore.h"
 
-#include <esp_system.h>
+#include <esp_random.h>
 
 #include <algorithm>
 #include <cstring>
+#include <utility>
 
 namespace {
 uint32_t randomBelow(const uint32_t bound) {
