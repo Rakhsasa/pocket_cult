@@ -55,19 +55,31 @@ void PocketCultivatorActivity::buildScreen(UiScreen& screen) {
                   static_cast<unsigned>(character.spirit), static_cast<unsigned>(character.comprehension),
                   static_cast<unsigned>(character.luck));
     rows[1] = {};
-    rows[1].label = "Natural attributes";
-    rows[1].value = attributeSummary.data();
+    rows[1].label = "Cultivation Realm";
+    rows[1].value = "Body Tempering · 1";
     rows[1].actionValue = 1;
 
     rows[2] = {};
-    rows[2].label = "Personal Library";
-    rows[2].value = "Open books";
+    rows[2].label = "Natural attributes";
+    rows[2].value = attributeSummary.data();
     rows[2].actionValue = 2;
 
+    static constexpr const char* CONSTITUTIONS[] = {"Mortal", "Spiritual", "Profound",
+                                                      "Heavenly", "Immortal", "Divine"};
     rows[3] = {};
-    rows[3].label = "Settings";
-    rows[3].value = "Device settings";
+    rows[3].label = "Constitution";
+    rows[3].value = CONSTITUTIONS[character.constitutionRarity <= 5 ? character.constitutionRarity : 0];
     rows[3].actionValue = 3;
+
+    rows[4] = {};
+    rows[4].label = "Personal Library";
+    rows[4].value = "Open books";
+    rows[4].actionValue = 4;
+
+    rows[5] = {};
+    rows[5].label = "Settings";
+    rows[5].value = "Device settings";
+    rows[5].actionValue = 5;
   }
 
   fui::ListProps props;
@@ -90,10 +102,10 @@ void PocketCultivatorActivity::activateIndex(const int index) {
   }
 
   switch (index) {
-    case 2:
+    case 4:
       activityManager.goToLibrary();
       return;
-    case 3:
+    case 5:
       activityManager.goToSettings();
       return;
     default:
