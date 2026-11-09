@@ -362,7 +362,7 @@ void ActivityManager::goToFullScreenMessage(std::string message, EpdFontFamily::
 void ActivityManager::goHome(HomeMenuItem initialMenuItem, bool cleanInitialRefresh) {
   // Pocket Cultivator is the primary shell on the X4 OG only. Other CrossPoint
   // targets retain their existing HomeActivity until separately supported.
-  if (BoardConfig::ACTIVE.board == Board::XteinkX4) {
+  if (BoardConfig::ACTIVE.board == BoardConfig::Board::XteinkX4) {
     replaceActivity(std::make_unique<PocketCultivatorActivity>(renderer, mappedInput));
     return;
   }
