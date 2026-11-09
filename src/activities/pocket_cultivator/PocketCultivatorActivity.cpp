@@ -5,13 +5,11 @@
 #include <Memory.h>
 
 #include <cstdio>
-#include <memory>
 #include <utility>
 
 #include "ActivityManager.h"
 #include "MappedInputManager.h"
 #include "activities/util/KeyboardEntryActivity.h"
-#include "activities/util/FullScreenMessageActivity.h"
 #include "components/UITheme.h"
 
 namespace fui = freeink::ui;
