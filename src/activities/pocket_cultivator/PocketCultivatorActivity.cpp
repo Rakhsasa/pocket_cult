@@ -24,6 +24,9 @@ int PocketCultivatorActivity::listCount() const {
 }
 
 void PocketCultivatorActivity::onEnter() {
+  // Keep the first scheduled paint from observing the store before it has
+  // loaded. This mirrors the data-publication pattern used by LibraryListActivity.
+  RenderLock lock(*this);
   UiListActivity::onEnter();
   if (!storeLoaded) {
     POCKET_CULTIVATOR.loadFromFile();
@@ -154,12 +157,18 @@ void PocketCultivatorActivity::beginSectNaming(const std::string& characterName)
 }
 
 void PocketCultivatorActivity::finishFoundingCharacter(const std::string& sectName) {
-  if (!POCKET_CULTIVATOR.createFoundingCharacter(pendingFounderName, sectName)) {
-    LOG_ERR("POCKET", "Failed to save founding character");
-    pendingFounderName.clear();
-    return;
+  bool created = false;
+  {
+    // Publish the new character while the render task is excluded; the store
+    // write is a one-time operation during first-run setup.
+    RenderLock lock(*this);
+    created = POCKET_CULTIVATOR.createFoundingCharacter(pendingFounderName, sectName);
   }
   pendingFounderName.clear();
+  if (!created) {
+    LOG_ERR("POCKET", "Failed to save founding character");
+    return;
+  }
   nav.reset();
   requestUpdate();
 }
