@@ -13,7 +13,7 @@ class PocketCultivatorActivity final : public UiListActivity {
   bool isHomeActivity() const override { return true; }
 
  private:
-  static constexpr int MAX_ROWS = 4;
+  static constexpr int MAX_ROWS = 6;
   int listCount() const override;
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
