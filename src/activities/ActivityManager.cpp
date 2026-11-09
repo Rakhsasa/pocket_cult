@@ -22,6 +22,7 @@
 #include "home/CrashActivity.h"
 #include "home/FileBrowserActivity.h"
 #include "home/HomeActivity.h"
+#include "pocket_cultivator/PocketCultivatorActivity.h"
 #include "library/LibraryListActivity.h"
 #include "network/CrossPointWebServerActivity.h"
 #include "network/UsbDriveActivity.h"
@@ -359,6 +360,13 @@ void ActivityManager::goToFullScreenMessage(std::string message, EpdFontFamily::
 }
 
 void ActivityManager::goHome(HomeMenuItem initialMenuItem, bool cleanInitialRefresh) {
+  // Pocket Cultivator is the primary shell on the X4 OG only. Other CrossPoint
+  // targets retain their existing HomeActivity until separately supported.
+  if (BoardConfig::ACTIVE.board == Board::XteinkX4) {
+    replaceActivity(std::make_unique<PocketCultivatorActivity>(renderer, mappedInput));
+    return;
+  }
+
   if (initialMenuItem == HomeMenuItem::NONE && currentActivity) {
     const auto& activityName = currentActivity->name;
     if (activityName == "FileBrowser") {
