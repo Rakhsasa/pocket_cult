@@ -1,0 +1,153 @@
+#include "PocketCultivatorActivity.h"
+
+#include <GfxRenderer.h>
+#include <Logging.h>
+#include <Memory.h>
+
+#include <cstdio>
+#include <memory>
+#include <utility>
+
+#include "ActivityManager.h"
+#include "MappedInputManager.h"
+#include "activities/util/KeyboardEntryActivity.h"
+#include "activities/util/FullScreenMessageActivity.h"
+#include "components/UITheme.h"
+
+namespace fui = freeink::ui;
+
+PocketCultivatorActivity::PocketCultivatorActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
+    : UiListActivity("PocketCultivator", renderer, mappedInput) {}
+
+int PocketCultivatorActivity::listCount() const {
+  return POCKET_CULTIVATOR.hasCharacter() ? MAX_ROWS : 1;
+}
+
+void PocketCultivatorActivity::onEnter() {
+  UiListActivity::onEnter();
+  if (!storeLoaded) {
+    POCKET_CULTIVATOR.loadFromFile();
+    storeLoaded = true;
+  }
+  requestUpdate();
+}
+
+void PocketCultivatorActivity::buildScreen(UiScreen& screen) {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  screen.setContentMarginFromScreen(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
+                                                static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+
+  const auto& character = POCKET_CULTIVATOR.character();
+  if (!POCKET_CULTIVATOR.hasCharacter()) {
+    rows[0] = {};
+    rows[0].label = "Establish your sect";
+    rows[0].value = "Begin";
+    rows[0].actionValue = 0;
+  } else {
+    rows[0] = {};
+    rows[0].label = character.name.c_str();
+    rows[0].value = character.sectName.c_str();
+    rows[0].actionValue = 0;
+
+    std::snprintf(attributeSummary.data(), attributeSummary.size(), "STR %u  CON %u  SPI %u  COM %u  LCK %u",
+                  static_cast<unsigned>(character.strength), static_cast<unsigned>(character.constitution),
+                  static_cast<unsigned>(character.spirit), static_cast<unsigned>(character.comprehension),
+                  static_cast<unsigned>(character.luck));
+    rows[1] = {};
+    rows[1].label = "Natural attributes";
+    rows[1].value = attributeSummary.data();
+    rows[1].actionValue = 1;
+
+    rows[2] = {};
+    rows[2].label = "Personal Library";
+    rows[2].value = "Open books";
+    rows[2].actionValue = 2;
+
+    rows[3] = {};
+    rows[3].label = "Settings";
+    rows[3].value = "Device settings";
+    rows[3].actionValue = 3;
+  }
+
+  fui::ListProps props;
+  props.items = rows.data();
+  props.count = static_cast<uint16_t>(listCount());
+  props.action = ACTION_ROW;
+  props.inputMask = fui::InputTouch;
+  props.valueInset = 8;
+  syncListViewport(screen, props);
+  screen.list(props);
+}
+
+void PocketCultivatorActivity::activateIndex(const int index) {
+  nav.selected = index;
+  app.clearTapFlash();
+
+  if (!POCKET_CULTIVATOR.hasCharacter()) {
+    if (index == 0) beginFoundingCharacter();
+    return;
+  }
+
+  switch (index) {
+    case 2:
+      activityManager.goToLibrary();
+      return;
+    case 3:
+      activityManager.goToSettings();
+      return;
+    default:
+      // Character detail and cultivation actions are introduced in the next
+      // gameplay slice; keep the first milestone deliberately read-only here.
+      return;
+  }
+}
+
+void PocketCultivatorActivity::beginFoundingCharacter() {
+  auto activity = makeUniqueNoThrow<KeyboardEntryActivity>(renderer, mappedInput, "First Patriarch", "",
+                                                           static_cast<size_t>(32), InputType::Text);
+  if (!activity) {
+    LOG_ERR("POCKET", "OOM: founder-name keyboard");
+    return;
+  }
+  startActivityForResult(std::move(activity), [this](const ActivityResult& result) {
+    if (result.isCancelled) return;
+    const auto* entered = std::get_if<KeyboardResult>(&result.data);
+    if (!entered || entered->text.empty()) return;
+    beginSectNaming(entered->text);
+  });
+}
+
+void PocketCultivatorActivity::beginSectNaming(const std::string& characterName) {
+  pendingFounderName = characterName;
+  auto activity = makeUniqueNoThrow<KeyboardEntryActivity>(renderer, mappedInput, "Founding Sect", "",
+                                                           static_cast<size_t>(32), InputType::Text);
+  if (!activity) {
+    LOG_ERR("POCKET", "OOM: sect-name keyboard");
+    pendingFounderName.clear();
+    return;
+  }
+  startActivityForResult(std::move(activity), [this](const ActivityResult& result) {
+    if (result.isCancelled) {
+      pendingFounderName.clear();
+      return;
+    }
+    const auto* entered = std::get_if<KeyboardResult>(&result.data);
+    if (!entered || entered->text.empty()) {
+      pendingFounderName.clear();
+      return;
+    }
+    finishFoundingCharacter(entered->text);
+  });
+}
+
+void PocketCultivatorActivity::finishFoundingCharacter(const std::string& sectName) {
+  if (!POCKET_CULTIVATOR.createFoundingCharacter(pendingFounderName, sectName)) {
+    LOG_ERR("POCKET", "Failed to save founding character");
+    pendingFounderName.clear();
+    return;
+  }
+  pendingFounderName.clear();
+  nav.reset();
+  requestUpdate();
+}
