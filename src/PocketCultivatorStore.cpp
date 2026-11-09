@@ -2,8 +2,6 @@
 
 #include <esp_random.h>
 
-#include <algorithm>
-#include <cstring>
 #include <utility>
 
 namespace {
